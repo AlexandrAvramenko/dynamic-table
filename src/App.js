@@ -4,6 +4,8 @@ import Loader from "./Loader/Loader";
 import Table from "./Table/Table";
 import DetailRowView from "./DetailRowView/DetailRowView";
 import ModeSelector from "./ModeSelector/ModeSelector";
+import TableSearch from "./TableSearch/TableSearch";
+
 import _ from "lodash";
 
 class App extends Component {
@@ -11,6 +13,7 @@ class App extends Component {
     isModeSelected: false,
     isLoding: false,
     data: [],
+    search: "",
     sort: "asc", //desc
     sortField: "id",
     row: null,
@@ -53,10 +56,28 @@ class App extends Component {
     this.setState({ row });
   };
 
-  pageChangeHandler = ({selected}) => {
-    this.setState({currentPage: selected})
+  pageChangeHandler = ({ selected }) => {
+    this.setState({ currentPage: selected });
   };
 
+  searchHandler = search => {
+    this.setState({ search, currentPage: 0 });
+  };
+
+  getFilteredData() {
+    const {data, search} = this.state
+
+    if (!search) {
+      return data
+    }
+
+    return data.filter(item => {
+      return item['firstName'].toLowerCase().includes(search.toLowerCase())
+        || item['lastName'].toLowerCase().includes(search.toLowerCase())
+        || item['email'].toLowerCase().includes(search.toLowerCase())
+    })
+  }
+ 
   render() {
     const pageSize = 50;
 
@@ -68,20 +89,29 @@ class App extends Component {
       );
     }
 
-    const displayData = _.chunk(this.state.data, pageSize)[this.state.currentPage]
+    const filteredData = this.getFilteredData()
+
+    const pageCount = Math.ceil(filteredData.length / pageSize)
+
+    const displayData = _.chunk(filteredData, pageSize)[
+      this.state.currentPage
+    ];
 
     return (
       <div className="container">
         {this.state.isLoading ? (
           <Loader />
         ) : (
-          <Table
-            data={displayData}
-            onSort={this.onSort}
-            sort={this.state.sort}
-            sortField={this.state.sortField}
-            onRowSelect={this.onRowSelect}
-          />
+          <React.Fragment>
+            <TableSearch onSearch={this.searchHandler} />
+            <Table
+              data={displayData}
+              onSort={this.onSort}
+              sort={this.state.sort}
+              sortField={this.state.sortField}
+              onRowSelect={this.onRowSelect}
+            />
+          </React.Fragment>
         )}
         {this.state.data.length > pageSize ? (
           <div className="d-flex justify-content-center">
@@ -90,7 +120,7 @@ class App extends Component {
               nextLabel={">"}
               breakLabel={"..."}
               breakClassName={"break-me"}
-              pageCount={20}
+              pageCount={pageCount}
               marginPagesDisplayed={2}
               pageRangeDisplayed={5}
               onPageChange={this.pageChangeHandler}
