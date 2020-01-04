@@ -20,7 +20,7 @@ class App extends Component {
 
     this.setState({
       isLoading: false,
-      data
+      data: _.orderBy(data, this.state.sortField, this.state.sort)
     })
   }
 
